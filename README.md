@@ -62,6 +62,8 @@ it means as soon as text is found in a the DB, it is displayed in the browser (i
 	
 ### With Sawgger API :
 - <a href="http://localhost:8080/swagger-ui.html" target="_blank">localhost:8080/swagger-ui.html</a>
+- Or, with Amazone Web Services ( as it is setup on AWS ) :
+	<a href="http://patdesch.eu-central-1.elasticbeanstalk.com/swagger-ui.html" target="_blank">docmanager swagger api on AWS</a>
 
 ### url : 
 		
