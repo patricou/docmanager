@@ -16,17 +16,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.gridfs.GridFsResource;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
-
 import javax.xml.bind.JAXBElement;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 /**
  * Created by patricou on 08/11/2017.
@@ -43,33 +40,29 @@ public class FileDocumentService {
     public static final Logger logger = LoggerFactory.getLogger( FileDocumentService.class );
 
     // return the list of all lines where a word is present
-    private List<WordLines> getWordsLines(Stream<String> linesOfString){
+    private List<WordLines> getWordsLines(Flux<String> linesOfString){
 
-        // allow to count the line number
-        AtomicInteger lineNumber = new AtomicInteger(0);
         List<WordLines> wordsLines = new ArrayList<>();
 
-        linesOfString
-                // Gather data in a List<TempWordFeature>
-                .flatMap(line -> {
-                            lineNumber.addAndGet(1);
-                            return Arrays.stream(line.split("[^a-zA-Zéàèç]"))
-                                    .map(String::toLowerCase)
-                                    .filter(word -> word.length() > 2 && word.matches("[a-zéàèç]+"))
-                                    .map(w -> new TempWordFeature(lineNumber.get(), w));
-                        }
+         Flux.zip(Flux.range(1, Integer.MAX_VALUE), linesOfString)
+                .flatMap(tuple ->  Flux.fromArray(tuple.getT2().split("[^a-zA-Zéàèç]"))
+                                        .map(String::toLowerCase)
+                                        .filter(word -> word.length() > 2 && word.matches("[a-zéàèç]+"))
+                                        .map(w -> new TempWordFeature(tuple.getT1(), w ))
                 )
+                .toStream()
                 // Gather the data in a TreeMap<String ( is the word itself ) ,TreeSet<Integer> ( is the list of Lines) >
                 .collect(Collectors.groupingBy(
-                        TempWordFeature::getWord,
-                        TreeMap::new,
-                        Collectors.mapping(
-                                TempWordFeature::getLineNumber,
-                                Collectors.toCollection(TreeSet::new)))
-                )
+                TempWordFeature::getWord,
+                TreeMap::new,
+                Collectors.mapping(
+                        TempWordFeature::getLineNumber,
+                        Collectors.toCollection(TreeSet::new)))
+        )
                 // add the Map<String, Set<Integer> in a List<WordLines>
                 .forEach( (k, v) -> wordsLines.add(new WordLines(k ,v)));
-        return wordsLines;
+
+         return wordsLines;
     }
 
     //  return text of the PDF document
@@ -134,25 +127,22 @@ public class FileDocumentService {
                 );
     }
 
-    private List<ParagraphElement> getListParagraphElement(Stream<String> lines, FileDocument fileDocument, String word ){
+    private List<ParagraphElement> getListParagraphElement(Flux<String> lines, FileDocument fileDocument, String word ){
 
         Integer delta = 2;
-
         Set<Integer> linesToRead = fileDocument.getWordLines()
                 .stream()
                 .filter(wordLines ->wordLines.getWord().contains(word))
                 .flatMap(wordLines -> wordLines.getLinesNumber().stream())
                 .flatMapToInt(lineNumber-> IntStream.range(lineNumber-delta,lineNumber+delta+1))
-                .mapToObj(i-> Integer.valueOf(i))
+                .mapToObj(Integer::valueOf)
                 .collect(Collectors.toSet());
 
-        AtomicInteger atomicInteger = new AtomicInteger(0);
-
-        return  lines.map( line -> {    atomicInteger.addAndGet(1);
-            return line;})
-                .filter( l ->  linesToRead.contains(Integer.valueOf(atomicInteger.get())))
-                .map ( line -> new ParagraphElement(atomicInteger.get(),line))
-                .collect(Collectors.toList());
+        return  Flux.zip(Flux.range(1, Integer.MAX_VALUE), lines)
+                    .filter ( tuple -> linesToRead.contains(tuple.getT1()))
+                    .map( tuple -> new ParagraphElement( tuple.getT1(), tuple.getT2()))
+                    .collectList()
+                    .block();
     }
 
     // return the List of Paragraph containing word
@@ -166,18 +156,18 @@ public class FileDocumentService {
             // Text format
             if (contentType.contains("text/plain")) {
                 BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
-                return getListParagraphElement(br.lines(),fileDocument, word);
+                return getListParagraphElement(Flux.fromStream(br.lines()),fileDocument, word);
             }
             // Word format
             else if (contentType.contains("application/vnd.openxmlformats-officedocument.word")) {
-                return getListParagraphElement(retrieveWordDocumentsLines(inputStream).stream(),fileDocument, word);
+                return getListParagraphElement(Flux.fromIterable(retrieveWordDocumentsLines(inputStream)),fileDocument, word);
             }
             // PDF format
             else if (contentType.contains("application/pdf")) {
                 // Get Text from PDF document
                 String pdfFileInText = getTextFromPDFDoc(inputStream);
                 // split each lines by whitespace and get the number of lines by words
-                return getListParagraphElement(Stream.of(pdfFileInText.split("\\r?\\n")),fileDocument, word);
+                return getListParagraphElement(Flux.fromArray(pdfFileInText.split("\\r?\\n")),fileDocument, word);
             }
 
         }catch (IOException e){
@@ -191,18 +181,18 @@ public class FileDocumentService {
         // Text format
         if (contentType.contains("text/plain")) {
             BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
-            return getWordsLines(br.lines());
+            return getWordsLines(Flux.fromStream(br.lines()));
         }
         // Word format
         else if (contentType.contains("application/vnd.openxmlformats-officedocument.word")) {
-            return getWordsLines(retrieveWordDocumentsLines(inputStream).stream());
+            return getWordsLines(Flux.fromIterable(retrieveWordDocumentsLines(inputStream)));
         }
         // PDF format
         else if (contentType.contains("application/pdf")) {
             // Get Text from PDF document
             String pdfFileInText = getTextFromPDFDoc(inputStream);
             // split each lines by whitespace and get the number of lines by words
-            return getWordsLines(Stream.of(pdfFileInText.split("\\r?\\n")));
+            return getWordsLines(Flux.fromArray(pdfFileInText.split("\\r?\\n")));
         }
         // jpeg Format
         else if (contentType.contains("image/jpeg")){

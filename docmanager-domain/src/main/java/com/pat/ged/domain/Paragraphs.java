@@ -9,7 +9,7 @@ import java.util.List;
 public class Paragraphs {
 
     private String fromFile;
-    //   private String word;
+
     private List<ParagraphElement> paragraphElements = new ArrayList<>(10);
 
     public String getFromFile() {
