@@ -61,10 +61,12 @@ it means as soon as text is found in a the DB, it is displayed in the browser (i
 ## Tests :	
 	
 ### With Sawgger API :
-- <a href="http://localhost:8080/swagger-ui.html" target="_blank">localhost:8080/swagger-ui.html</a>
+- If you have launched docmanager on your workstation :<br>
+	<a href="http://localhost:8080/swagger-ui.html" target="_blank">localhost:8080/swagger-ui.html</a>
+- Or, with Amazone Web Services ( as it is setup on AWS), in this case, no need to install it on your workstation : <br>
+	<a href="http://patdesch.eu-central-1.elasticbeanstalk.com/swagger-ui.html" target="_blank">docmanager Swagger API on AWS</a>
 
 ### url : 
-		
 - return all paragraphs in doc containing {word} :<br>
 	<a href="http://localhost:8080/api/paragraph/{word}" target="_blank">localhost:8080/api/paragraph/{word}</a>
 - return all doc containing the  word ( with a list of lines in which is the word )<br>
