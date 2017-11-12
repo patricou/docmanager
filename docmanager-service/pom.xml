@@ -4,15 +4,13 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-parent</artifactId>
-    <version>2.0.0.M5</version>
-    <relativePath/> <!-- lookup parent from repository -->
+    <groupId>com.pat.ged</groupId>
+    <artifactId>docmanager</artifactId>
+    <version>1.0-SNAPSHOT</version>
   </parent>
 
   <groupId>com.pat.ged</groupId>
   <artifactId>docmanager-service</artifactId>
-  <version>1.0-SNAPSHOT</version>
 
   <name>docmanager-service</name>
   <url>http://maven.apache.org</url>
@@ -30,17 +28,11 @@
     </dependency>
     <dependency>
       <groupId>com.pat.ged</groupId>
-        <artifactId>docmanager-domain</artifactId>
-        <version>1.0-SNAPSHOT</version>
+      <artifactId>docmanager-domain</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-data-rest</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-test</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
@@ -80,60 +72,6 @@
       <version>1.2.0</version>
     </dependency>
   </dependencies>
-  <repositories>
-    <repository>
-      <id>spring-snapshots</id>
-      <name>Spring Snapshots</name>
-      <url>https://repo.spring.io/snapshot</url>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-    <repository>
-      <id>spring-milestones</id>
-      <name>Spring Milestones</name>
-      <url>https://repo.spring.io/milestone</url>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
-  <pluginRepositories>
-    <pluginRepository>
-      <id>spring-snapshots</id>
-      <name>Spring Snapshots</name>
-      <url>https://repo.spring.io/snapshot</url>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </pluginRepository>
-    <pluginRepository>
-      <id>spring-milestones</id>
-      <name>Spring Milestones</name>
-      <url>https://repo.spring.io/milestone</url>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </pluginRepository>
-  </pluginRepositories>
 
-  <distributionManagement>
-    <!--  Publish versioned releases here  -->
-    <repository>
-      <id>nexus</id>
-      <name>My releases</name>
-      <url>
-        http://192.168.1.29:8081/nexus/content/repositories/releases/
-      </url>
-    </repository>
-    <!--  Publish snapshots here  -->
-    <snapshotRepository>
-      <id>nexus</id>
-      <name>My snapshots</name>
-      <url>
-        http://192.168.1.29:8081/nexus/content/repositories/snapshots/
-      </url>
-    </snapshotRepository>
-  </distributionManagement>
 </project>
 

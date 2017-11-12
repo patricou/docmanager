@@ -23,6 +23,7 @@ public class FileDocument {
     @NotNull
     private LocalDateTime createdDate;
     private String owner;
+    private String word;
     @NotNull
     private String size;
     private List<WordLines> wordLines;
@@ -81,6 +82,14 @@ public class FileDocument {
 
     public void setOwner(String owner) {
         this.owner = owner;
+    }
+
+    public String getWord() {
+        return word;
+    }
+
+    public void setWord(String word) {
+        this.word = word;
     }
 
     public String getSize() {

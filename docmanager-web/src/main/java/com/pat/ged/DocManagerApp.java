@@ -1,5 +1,6 @@
 package com.pat.ged;
 
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -10,22 +11,21 @@ import org.springframework.data.mongodb.repository.config.EnableReactiveMongoRep
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
 /**
- * Hello world!
+ * Hello DocManager
  *
  */
-@SpringBootApplication
-@EnableSwagger2
+
 @EnableReactiveMongoRepositories
 @AutoConfigureAfter(EmbeddedMongoAutoConfiguration.class)
-public class DocManagerApp extends SpringBootServletInitializer{
-
-    @Override
-    protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
-        return application.sources(DocManagerApp.class);
-    }
+@SpringBootApplication(scanBasePackages={"com.pat"})
+@EnableSwagger2
+public class DocManagerApp implements CommandLineRunner{
 
     public static void main(String[] args) {
-
         SpringApplication.run(DocManagerApp.class, args);
+    }
+
+    public void run(String... arg0) throws Exception{
+
     }
 }

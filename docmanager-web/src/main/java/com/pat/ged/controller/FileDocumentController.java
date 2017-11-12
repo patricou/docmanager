@@ -25,10 +25,10 @@ import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import java.io.*;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Created by patricou on 08/11/2017.
@@ -52,7 +52,7 @@ public class FileDocumentController {
     @GetMapping("/test")
     public Flux<String> test(){
 
-         return Flux.zip(Flux.fromStream(Stream.of("1","2","3")),Flux.fromStream(Stream.of("6","7"))).map( t-> t.getT1() + t.getT2());
+        return Flux.range(1, Integer.MAX_VALUE).delaySubscription(Duration.ofSeconds(1)).map(i-> ""+i).limitRequest(10).log();
 
     }
 

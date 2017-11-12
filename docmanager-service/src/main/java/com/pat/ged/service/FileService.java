@@ -48,7 +48,7 @@ public class FileService {
 
     // retrieve the file from MongoDB
     public GridFsResource getResource(String fileName){
-        // with MongoDB 2.0.0.Release, we get the file like this  ( not with GridFSDBFile ) :
+        // with MongoDB 2.0.0.Release, we get the file like this  ( not with GridFSDBFile ) : 
         Optional<GridFsResource> gridFsResource = Optional.ofNullable(gridFsTemplate.getResource(fileName));
         gridFsResource.orElseThrow(()->new FileDocumentException(fileName+ " Not Found"));
 

@@ -4,32 +4,29 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-parent</artifactId>
-    <version>2.0.0.M5</version>
-    <relativePath/> <!-- lookup parent from repository -->
+    <groupId>com.pat.ged</groupId>
+    <artifactId>docmanager</artifactId>
+    <version>1.0-SNAPSHOT</version>
   </parent>
 
   <groupId>com.pat.ged</groupId>
   <artifactId>docmanager-web</artifactId>
-  <version>1.0-SNAPSHOT</version>
+
   <name>docmanager-web</name>
   <url>http://maven.apache.org</url>
+
   <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <java.version>1.8</java.version>
     <swagger.version>2.7.0</swagger.version>
   </properties>
+
   <dependencies>
     <dependency>
-      <groupId>com.pat.ged</groupId>
+      <groupId>${project.groupId}</groupId>
       <artifactId>docmanager-service</artifactId>
-      <version>1.0-SNAPSHOT</version>
     </dependency>
     <dependency>
-      <groupId>com.pat.ged</groupId>
+      <groupId>${project.groupId}</groupId>
       <artifactId>docmanager-domain</artifactId>
-      <version>1.0-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -38,11 +35,6 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-webflux</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-test</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.springfox</groupId>
@@ -60,67 +52,25 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
   <build>
     <plugins>
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
       </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.19</version>
+        <dependencies>
+          <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-surefire-provider</artifactId>
+            <version>${junit.platform.version}</version>
+          </dependency>
+        </dependencies>
+      </plugin>
     </plugins>
   </build>
-  <repositories>
-    <repository>
-      <id>spring-snapshots</id>
-      <name>Spring Snapshots</name>
-      <url>https://repo.spring.io/snapshot</url>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-    <repository>
-      <id>spring-milestones</id>
-      <name>Spring Milestones</name>
-      <url>https://repo.spring.io/milestone</url>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
-  <pluginRepositories>
-    <pluginRepository>
-      <id>spring-snapshots</id>
-      <name>Spring Snapshots</name>
-      <url>https://repo.spring.io/snapshot</url>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </pluginRepository>
-    <pluginRepository>
-      <id>spring-milestones</id>
-      <name>Spring Milestones</name>
-      <url>https://repo.spring.io/milestone</url>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </pluginRepository>
-  </pluginRepositories>
 
-  <distributionManagement>
-    <!--  Publish versioned releases here  -->
-    <repository>
-      <id>nexus</id>
-      <name>My releases</name>
-      <url>
-        http://192.168.1.29:8081/nexus/content/repositories/releases/
-      </url>
-    </repository>
-    <!--  Publish snapshots here  -->
-    <snapshotRepository>
-      <id>nexus</id>
-      <name>My snapshots</name>
-      <url>
-        http://192.168.1.29:8081/nexus/content/repositories/snapshots/
-      </url>
-    </snapshotRepository>
-  </distributionManagement>
 </project>

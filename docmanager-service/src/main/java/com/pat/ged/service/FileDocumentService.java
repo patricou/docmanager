@@ -37,10 +37,10 @@ public class FileDocumentService {
     @Autowired
     FileService fileService;
 
-    public static final Logger logger = LoggerFactory.getLogger( FileDocumentService.class );
+    private static final Logger logger = LoggerFactory.getLogger( FileDocumentService.class );
 
     // return the list of all lines where a word is present
-    private List<WordLines> getWordsLines(Flux<String> linesOfString){
+    public List<WordLines> getWordsLines(Flux<String> linesOfString){
 
         List<WordLines> wordsLines = new ArrayList<>();
 
