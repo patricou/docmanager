@@ -17,6 +17,7 @@ public class DocManagerAppTest {
 
     @BeforeAll
     static void setup() {
+
         logger.info("@BeforeAll - executes once before all test methods in this class");
     }
 
@@ -34,16 +35,8 @@ public class DocManagerAppTest {
     }
 
     @Test
-    @DisplayName("Test FileDocumentController test()")
-    void testFileDocumentController(){
-
-        WebTestClient client = WebTestClient
-                .bindToServer()
-                .baseUrl("http://localhost:8080")
-                .build();
-
-        client.get().uri("/api/test").exchange().expectBody(String.class).isEqualTo("12345678910");
-
+    void testMath(){
+        logger.info("4 au carré = " + Math.pow(4,2));
     }
 
     @AfterEach

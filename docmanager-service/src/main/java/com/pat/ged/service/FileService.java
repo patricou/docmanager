@@ -7,6 +7,8 @@ import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.gridfs.GridFsCriteria;
 import org.springframework.data.mongodb.gridfs.GridFsResource;
 import org.springframework.data.mongodb.gridfs.GridFsTemplate;
 import org.springframework.stereotype.Repository;
@@ -28,22 +30,28 @@ public class FileService {
     public static final Logger logger = LoggerFactory.getLogger( FileService.class );
 
     // save the file in MongoDB
-    public String saveFile(MultipartFile multipartFile) throws IOException {
+    public String saveFile(MultipartFile multipartFile) {
 
-        DBObject metaData = new BasicDBObject();
-        metaData.put("FileName", multipartFile.getOriginalFilename());
+        try {
 
-        // Save the doc ( all type ) in  MongoDB
-        ObjectId objectId =
-                gridFsTemplate.store(
-                        multipartFile.getInputStream(),
-                        multipartFile.getOriginalFilename(),
-                        multipartFile.getContentType(),
-                        metaData);
+            DBObject metaData = new BasicDBObject();
+            metaData.put("FileName", multipartFile.getOriginalFilename());
 
-        if (logger.isInfoEnabled()) logger.info("Doc created id : "+objectId.toString());
+            // Save the doc ( all type ) in  MongoDB
+            ObjectId objectId =
+                    gridFsTemplate.store(
+                            multipartFile.getInputStream(),
+                            multipartFile.getOriginalFilename(),
+                            multipartFile.getContentType(),
+                            metaData);
 
-        return objectId.toString();
+            if (logger.isInfoEnabled()) logger.info("Doc created id : " + objectId.toString());
+
+            return objectId.toString();
+        }
+        catch(Exception e){
+            throw new FileDocumentException("Error in FileService.saveFile() "+ e.getMessage());
+        }
     }
 
     // retrieve the file from MongoDB
@@ -55,4 +63,9 @@ public class FileService {
         return gridFsResource.orElse(null);
     }
 
+    //delete all files
+    public void delResources(String fileId){
+        Query query = new Query(GridFsCriteria.where("_id").is(fileId));
+        gridFsTemplate.delete(query);
+    }
 }

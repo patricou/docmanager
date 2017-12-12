@@ -28,4 +28,12 @@ public class ParagraphElement {
         this.text = text;
         this.line = line;
     }
+
+    @Override
+    public String toString() {
+        return "ParagraphElement{" +
+                "line=" + line +
+                ", text='" + text + '\'' +
+                '}';
+    }
 }

@@ -1,5 +1,4 @@
 package com.pat.ged.service;
-
 import com.pat.ged.domain.*;
 import com.pat.ged.exception.FileDocumentException;
 import com.pat.ged.repository.FileDocumentRepository;
@@ -15,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.gridfs.GridFsResource;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
 import javax.xml.bind.JAXBElement;
 import java.io.BufferedReader;
@@ -114,17 +114,22 @@ public class FileDocumentService {
     }
 
     // return the List of paragraphs containing the word
-    public Flux<Paragraphs> getParagraphFromAllFiles(String word){
+    public Flux<Paragraphs> getParagraphFromAllFiles (String word){
 
-        return  fileDocumentRepository
-                .findFileDocumentsByWordLinesWord(word)
-                .map(fileDocument -> {
-                            Paragraphs paragraphs = new Paragraphs(fileDocument.getFilename());
-                            List<ParagraphElement> paragraphElements = readParagraph(fileDocument, word);
-                            paragraphs.setParagraphElements(paragraphElements);
-                            return paragraphs;
-                        }
-                );
+        if (logger.isInfoEnabled()) logger.info("getParagraphFromAllFiles "+ word);
+
+        return fileDocumentRepository
+            .findFileDocumentsByWordLinesWord(word)
+            .map(fileDocument -> {
+                        Paragraphs paragraphs = new Paragraphs(fileDocument.getFilename(), fileDocument.getIdInGrid());
+                        List<ParagraphElement> paragraphElements = readParagraph(fileDocument, word);
+                        paragraphs.setParagraphElements(paragraphElements);
+                        return paragraphs;
+                }
+            ).doOnError(c -> {
+                    if (logger.isInfoEnabled()) logger.info("ERROR .......... " + c.getMessage());
+                    throw new FileDocumentException("Exception when retrieve in Paragraphs : " + c.getMessage());
+                });
     }
 
     private List<ParagraphElement> getListParagraphElement(Flux<String> lines, FileDocument fileDocument, String word ){
@@ -171,37 +176,43 @@ public class FileDocumentService {
             }
 
         }catch (IOException e){
-            throw new FileDocumentException("Error in FileDocumentService.reaLine() "+ e.getMessage());
+            throw new FileDocumentException("Error in FileDocumentService.readParagraph() "+ e.getMessage());
         }
         return new ArrayList<>();
     }
 
     // return a list of lines by word (  used when save of FileDocument )
-    public List<WordLines> wordLinesList(InputStream inputStream, String contentType){
-        // Text format
-        if (contentType.contains("text/plain")) {
-            BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
-            return getWordsLines(Flux.fromStream(br.lines()));
+    public List<WordLines> wordLinesList(MultipartFile fileData){
+
+        try (InputStream inputStream = fileData.getInputStream()) {
+            String contentType = fileData.getContentType();
+            // Text format
+            if (contentType.contains("text/plain")) {
+                BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
+                return getWordsLines(Flux.fromStream(br.lines()));
+            }
+            // Word format
+            else if (contentType.contains("application/vnd.openxmlformats-officedocument.word")) {
+                return getWordsLines(Flux.fromIterable(retrieveWordDocumentsLines(inputStream)));
+            }
+            // PDF format
+            else if (contentType.contains("application/pdf")) {
+                // Get Text from PDF document
+                String pdfFileInText = getTextFromPDFDoc(inputStream);
+                // split each lines by whitespace and get the number of lines by words
+                return getWordsLines(Flux.fromArray(pdfFileInText.split("\\r?\\n")));
+            }
+            // jpeg Format
+            else if (contentType.contains("image/jpeg")) {
+                if (logger.isInfoEnabled()) logger.info("Content-type : image/jpeg");
+                return new ArrayList<>();
+            }
+            // Other Format
+            else
+                throw new FileDocumentException("'" + contentType + "' Content type not yet implemented");
+        } catch (Exception e) {
+            throw new FileDocumentException(e.getMessage());
         }
-        // Word format
-        else if (contentType.contains("application/vnd.openxmlformats-officedocument.word")) {
-            return getWordsLines(Flux.fromIterable(retrieveWordDocumentsLines(inputStream)));
-        }
-        // PDF format
-        else if (contentType.contains("application/pdf")) {
-            // Get Text from PDF document
-            String pdfFileInText = getTextFromPDFDoc(inputStream);
-            // split each lines by whitespace and get the number of lines by words
-            return getWordsLines(Flux.fromArray(pdfFileInText.split("\\r?\\n")));
-        }
-        // jpeg Format
-        else if (contentType.contains("image/jpeg")){
-            if (logger.isInfoEnabled()) logger.info("Content-type : image/jpeg" );
-            return new ArrayList<>();
-        }
-        // Other Format
-        else
-            throw new FileDocumentException("'"+contentType+"' Content type not yet implemented");
     }
 
 }

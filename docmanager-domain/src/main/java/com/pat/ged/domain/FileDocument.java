@@ -29,7 +29,7 @@ public class FileDocument {
     private List<WordLines> wordLines;
     @Override
     public String toString() {
-        return getFilename();
+        return getFilename() + " / id : " + getId() ;
     }
 
     public FileDocument(@NotNull String filename) {

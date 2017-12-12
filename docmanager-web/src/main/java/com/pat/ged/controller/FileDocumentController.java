@@ -8,11 +8,14 @@ import com.pat.ged.exception.FileDocumentException;
 import com.pat.ged.repository.FileDocumentRepository;
 import com.pat.ged.service.FileDocumentService;
 import com.pat.ged.service.FileService;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
-
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.gridfs.GridFsResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -25,7 +28,6 @@ import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import java.io.*;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -35,6 +37,11 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/api")
+@CrossOrigin(   origins = "http://localhost:4200",
+                methods = {RequestMethod.GET, RequestMethod.DELETE,RequestMethod.OPTIONS,RequestMethod.POST},
+                maxAge = 3600,
+                allowCredentials = "true")
+@Api(value = "/api", description = "DocManager App Operations API")
 public class FileDocumentController {
 
     @Autowired
@@ -48,33 +55,26 @@ public class FileDocumentController {
 
     public static final Logger logger = LoggerFactory.getLogger( FileDocumentController.class );
 
-    //use for testing
-    @GetMapping("/test")
-    public Flux<String> test(){
-
-        return Flux.range(1, Integer.MAX_VALUE).delaySubscription(Duration.ofSeconds(1)).map(i-> ""+i).limitRequest(10).log();
-
-    }
-
     // save the file in mongodb and compute in which lines are each words ( saved in FilDocument )
-    @PostMapping(value="/file" , consumes = "multipart/form-data" )
+    @PostMapping(value="/fileupload" , consumes = "multipart/form-data" )
     @Transactional(propagation = Propagation.REQUIRED)  // doesn't work with MongoDB
+    @ApiOperation(value = "Save a file ( PDF, Word or txt in MongoDB.")
     // Important note : the name associate with RequestParam is 'file' --> seen in the browser network request.
     public  Mono<ResponseEntity<FileDocument>> postFileWithFlow(@RequestParam("file") MultipartFile multipartFile, @RequestParam(value = "metadata",required = false) String metaData ) {
 
-        final Stopwatch stopwatch = Stopwatch.createStarted();
+        try{
 
-        MultipartFile filedata = multipartFile;
+            final Stopwatch stopwatch = Stopwatch.createStarted();
 
-        try (InputStream inputStream = filedata.getInputStream()) {
+            MultipartFile filedata = multipartFile;
 
-            if (logger.isInfoEnabled()) logger.info("File NAme : "+ filedata.getOriginalFilename()+" <--> Content/type : " + filedata.getContentType());
+            if (logger.isInfoEnabled()) logger.info("File Name upload : "+ filedata.getOriginalFilename()+" <--> Content/type : " + filedata.getContentType());
 
             FileDocument fileDocument = new FileDocument(filedata.getOriginalFilename());
             fileDocument.setContentType(filedata.getContentType());
             fileDocument.setCreatedDate(LocalDateTime.now());
             fileDocument.setSize(Long.toString(filedata.getSize()));
-            fileDocument.setWordLines(fileDocumentService.wordLinesList(inputStream,filedata.getContentType()));
+            fileDocument.setWordLines(fileDocumentService.wordLinesList(filedata));
 
             // add WordLines for metaData passed via @RequestParam
             if (metaData != null  ) {
@@ -101,15 +101,17 @@ public class FileDocumentController {
                     .map(f -> new ResponseEntity<FileDocument>(f, HttpStatus.CREATED))
                     .switchIfEmpty(Mono.error(new FileDocumentException("Issue with the File save")));
 
-        } catch (Exception e) {
+        }catch(Exception e){
             throw new FileDocumentException(e.getMessage());
         }
-
     }
 
     // get the file from mongodb to display it
     @GetMapping( "/file")
+    @ApiOperation(value = "Open the file from MongoDB.")
     public Mono<ResponseEntity<InputStreamResource>> getFile(@RequestParam String filename) throws IOException {
+
+        if (logger.isInfoEnabled()) logger.info("File to download : " + filename);
 
         try {
             GridFsResource gridFsResource = fileService.getResource(filename);
@@ -123,76 +125,90 @@ public class FileDocumentController {
             headers.set("Content-Disposition", "inline; filename =" + filename);
             headers.set("Content-Length", Long.toString(gridFsResource.contentLength()));
 
-            return Mono.just(ResponseEntity.ok()
+            return Mono.just(
+                    ResponseEntity.ok()
                     .headers(headers)
-                    .body(inputStreamResource));
+                    .body(inputStreamResource)
+            );
 
         } catch (Exception e) {
+            if (logger.isInfoEnabled()) logger.info("File to download Exception : " + e.getMessage());
             throw new FileDocumentException(e.getMessage());
         }
     }
 
-    // search all files containing the word
-    @GetMapping( value = "/file/{word}" , produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> searchWordInFileDocument(@PathVariable(value = "word") String word){
-
-        final Stopwatch stopwatch = Stopwatch.createStarted();
-
-        final String wordlc = word.toLowerCase().trim();
-
-        if (logger.isInfoEnabled()) logger.info("String to Search : " + wordlc);
-
-        Flux<FileDocument> fileDocumentlist =  fileDocumentRepository.findFileDocumentsByWordLinesWord(wordlc);
-
-        Flux<String> stringFlux =  fileDocumentlist
-                .map(fileDocument -> ""+fileDocument.toString() + " / lines : " +
-                        fileDocument.getWordLines()
-                                .stream()
-                                .filter(f->f.getWord().contains(wordlc) )
-                                .map(f-> ""+f.getLinesNumber())
-                                .collect(Collectors.joining(" / ")));
-
-        stopwatch.stop();
-        if (logger.isInfoEnabled()) logger.info("Elapsed time for finding lines containing the word ==> " + stopwatch);
-
-        return stringFlux.switchIfEmpty(Flux.error(new FileDocumentException(word + " Not Found")));
-    }
-
     // find paragraph by word
-    @GetMapping(value ="paragraph/{word}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<Paragraphs> findParagraphByWord(@PathVariable(value = "word") String word){
+    @GetMapping(value ="paragraph/{word}")
+    @ApiOperation(value = "Finds paragraphs in all files containing word.",
+            notes = " Paragraph is one line before and one after the line containing word.",
+            response = String.class,
+            responseContainer = "Flux")
+    public Flux<Paragraphs> findParagraphByWord(@ApiParam(value = "word to be found in paragrapf", required = true) @PathVariable(value = "word") String word){
 
-        final Stopwatch stopwatch = Stopwatch.createStarted();
+            final Stopwatch stopwatch = Stopwatch.createStarted();
 
-        final String wordlc = word.toLowerCase().trim();
+            final String wordlc = word.toLowerCase().trim();
 
-        Flux<Paragraphs> paragraphsFlux = fileDocumentService.getParagraphFromAllFiles(wordlc);
+            Flux<Paragraphs> paragraphsFlux = fileDocumentService.getParagraphFromAllFiles(wordlc);
 
-        stopwatch.stop();
-        if (logger.isInfoEnabled()) logger.info("Elapsed time for finding paragraphs by word ==> " + stopwatch  );
+            stopwatch.stop();
+            if (logger.isInfoEnabled()) logger.info("Elapsed time for finding paragraphs by word ==> " + stopwatch  );
 
-        return paragraphsFlux.switchIfEmpty(Flux.error(new FileDocumentException(word + " Not Found")));
+            return paragraphsFlux;
     }
 
-    // delete all files
-    @DeleteMapping("/delallfiles")
-    public Mono<ResponseEntity<Void>> deleteAllFileDocument()
+    // delete file
+    @DeleteMapping(value="/delfile", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @ApiOperation(value = "Delete the file and fileDocument in MongoDB.")
+    public Mono<ResponseEntity<String>> deleteFile(@RequestParam String fileid)
     {
-        return fileDocumentRepository.deleteAll().then(Mono.just(new ResponseEntity<Void>(HttpStatus.OK)));
+        try{
+            //delete the file stored in MongoDB
+            fileService.delResources(fileid);
+            //delete the fileDocument Object store in MongoDB
+            FileDocument fileDocument = fileDocumentRepository.findFileDocumentsByIdInGrid(fileid).block();
+            if (logger.isInfoEnabled()) logger.info("file to delete ==> " + fileDocument + "/ fileid " + fileid + " " );
+            return fileDocumentRepository
+                    .deleteById(fileDocument.getId())
+                    .then(Mono
+                        .just(new ResponseEntity<>(HttpStatus.OK)));
+        }catch(Exception e){
+            throw new FileDocumentException(e.getMessage());
+        }
     }
 
     // get the name of all files
-    @GetMapping(value = "/files", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> findAllFileDocumentName()
+    @GetMapping(value = "/files/{tofind}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Display all files present in the MongoDB.")
+    public List<FileDocument> findAllFileDocumentName( @PathVariable(value = "tofind") String tofind )
     {
-        return fileDocumentRepository.findAll().map(f->" "+f.getFilename()+" : "+f.getContentType() +" : "+f.getSize());
+        if (logger.isInfoEnabled()) logger.info("file to find ==> " + tofind );
+
+        try {
+
+            Flux<FileDocument> fileDocumentFlux = null;
+            fileDocumentFlux = "all".equals(tofind) ? fileDocumentRepository.findAll(Sort.by("filename")) : fileDocumentRepository.findFileDocumentsByWordLinesWord(tofind);
+
+            return fileDocumentFlux.map(f -> {
+                FileDocument fileDocument = new FileDocument(f.getFilename());
+                fileDocument.setId(f.getId());
+                fileDocument.setIdInGrid(f.getIdInGrid());
+                fileDocument.setContentType(f.getContentType());
+                fileDocument.setCreatedDate(f.getCreatedDate());
+                fileDocument.setSize(f.getSize());
+                return fileDocument;
+            }).toStream().collect(Collectors.toList());
+
+        }catch(Exception e){
+            throw new FileDocumentException(e.getMessage());
+        }
     }
 
     @ExceptionHandler
     public ResponseEntity handleDocumentException(FileDocumentException ex) {
-
-        if (logger.isInfoEnabled()) logger.info("FileDocumentException : " + ex.getMessage());
-
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("FileDocumentException : "+ ex.getMessage());
+        if (logger.isInfoEnabled()) logger.info("EXCEPTION : " + ex.getMessage());
+        return ResponseEntity.
+                status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("FileDocumentException : "+ ex.getMessage());
     }
 }

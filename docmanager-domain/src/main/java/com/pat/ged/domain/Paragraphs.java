@@ -9,6 +9,7 @@ import java.util.List;
 public class Paragraphs {
 
     private String fromFile;
+    private String fromFileID;
 
     private List<ParagraphElement> paragraphElements = new ArrayList<>(10);
 
@@ -20,6 +21,13 @@ public class Paragraphs {
         this.fromFile = fromFile;
     }
 
+    public String getFromFileID() {
+        return fromFileID;
+    }
+
+    public void setFromFileID(String fromFileID) {
+        this.fromFileID = fromFileID;
+    }
 
     public List<ParagraphElement> getParagraphElements() {
         return paragraphElements;
@@ -29,8 +37,16 @@ public class Paragraphs {
         this.paragraphElements = paragraphElements;
     }
 
-    public Paragraphs(String fromFile) {
+    public Paragraphs(String fromFile, String fromFileID) {
         this.fromFile = fromFile;
+        this.fromFileID = fromFileID;
+    }
 
+    @Override
+    public String toString() {
+        return "Paragraphs{" +
+                "fromFile='" + fromFile + '\'' +
+                ", paragraphElements=" + paragraphElements +
+                '}';
     }
 }
