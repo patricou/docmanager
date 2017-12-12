@@ -138,7 +138,7 @@ public class FileDocumentController {
     }
 
     // find paragraph by word
-    @GetMapping(value ="paragraph/{word}")
+    @GetMapping(value ="paragraph/{word}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @ApiOperation(value = "Finds paragraphs in all files containing word.",
             notes = " Paragraph is one line before and one after the line containing word.",
             response = String.class,
