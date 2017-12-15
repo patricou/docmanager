@@ -74,10 +74,11 @@ it means as soon as text is found in a the DB, it is displayed in the browser (i
 - ( I let you see the API with swagger ...)
 
         note : {word} --> is the word to search	
-# And finally, I let you create the Front-End part ...
-(Becoze I'm Back-End developer ... )  <br>
-<i>and if you do it, don't forget to tell me !</i><br>
-<b>:-)</b>
+# Front-End part :
+
+<a href="https://github.com/patricou/docmanager_Front-End">Github repo</a>
+<a href="http://patdesch.eu-central-1.elasticbeanstalk.com">Test here ( Localized on AWS )</a>
+
 
 	
 	
