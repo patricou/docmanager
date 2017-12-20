@@ -76,7 +76,7 @@ it means as soon as text is found in a the DB, it is displayed in the browser (i
         note : {word} --> is the word to search	
 # Front-End part :
 
-<a href="https://github.com/patricou/docmanager_Front-End">Github repo</a>
+<a href="https://github.com/patricou/docmanager_Front-End">Github repo</a><br>
 <a href="http://patdesch.eu-central-1.elasticbeanstalk.com">Test here ( Localized on AWS )</a>
 
 
